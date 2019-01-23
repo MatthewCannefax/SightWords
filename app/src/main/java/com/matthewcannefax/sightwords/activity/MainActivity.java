@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -30,6 +31,7 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     TextView tvMessage;
     int messagePosition;
     boolean correct;
+    SpeechRecognizer speechRecognizer;
 
     List<SightWord> wordList;
     @Override
@@ -63,22 +65,22 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     private void getSpeechInput(View view){
 
-        SpeechRecognizer speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-//        speechRecognizer.setRecognitionListener(this);
-//        Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-//        speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-//        speechIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this.getPackageName());
-//        speechRecognizer.startListening(speechIntent);
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+        speechRecognizer.setRecognitionListener(this);
+        Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        speechIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, this.getPackageName());
+        speechRecognizer.startListening(speechIntent);
 
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(intent, SPEECH_REQUEST_CODE);
-        } else {
-            Toast.makeText(this, "feature not supported", Toast.LENGTH_SHORT).show();
-        }
+//        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+//        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+//        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+//
+//        if (intent.resolveActivity(getPackageManager()) != null) {
+//            startActivityForResult(intent, SPEECH_REQUEST_CODE);
+//        } else {
+//            Toast.makeText(this, "feature not supported", Toast.LENGTH_SHORT).show();
+//        }
     }
 
     @Override
@@ -131,6 +133,14 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        if(speechRecognizer != null){
+            speechRecognizer.destroy();
+        }
+    }
+
+    @Override
     public void onReadyForSpeech(Bundle bundle) {
 
     }
@@ -152,18 +162,106 @@ public class MainActivity extends AppCompatActivity implements RecognitionListen
 
     @Override
     public void onEndOfSpeech() {
-
     }
 
     @Override
     public void onError(int i) {
+        String message = "error";
 
+        switch (i) {
+
+            case SpeechRecognizer.ERROR_AUDIO:
+
+                message = "audio";
+
+                break;
+
+            case SpeechRecognizer.ERROR_CLIENT:
+
+                message = "client";
+
+                break;
+
+            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
+
+                message = "permission";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NETWORK:
+
+                message = "network";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
+
+                message = "timeout";
+
+                break;
+
+            case SpeechRecognizer.ERROR_NO_MATCH:
+
+                message = "no match";
+
+                break;
+
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
+
+                message = "busy";
+
+                break;
+
+            case SpeechRecognizer.ERROR_SERVER:
+
+                message = "server";
+
+                break;
+
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+
+                message = "timeout";
+
+                break;
+
+            default:
+
+                message = "understand";
+
+                break;
+        }
+
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Error");
+        builder.setMessage(message);
+        builder.setNegativeButton("Ok", null);
+        builder.show();
     }
 
     @Override
     public void onResults(Bundle bundle) {
+        List<String> matches = bundle.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+        for (String s :
+                matches) {
+            if(s.toLowerCase().equals(currentWord.toLowerCase())) {
+                correct = true;
+                break;
+            }
+        }
 
+        if(correct){
+            tvMessage.setText(SampleSightWords.positiveWordList().get(messagePosition));
+            tvMessage.setTextColor(getResources().getColor(R.color.correct));
+            setSightWord();
+        }else {
+            tvMessage.setTextColor(getResources().getColor(R.color.incorrect));
+            tvMessage.setText(SampleSightWords.getNegativeWord());
+        }
     }
+
+
 
     @Override
     public void onPartialResults(Bundle bundle) {

@@ -4,6 +4,15 @@ public class SightWord {
     private String word;
     private boolean isCorrect;
     private int streak;
+    private int wordID;
+
+    public int getWordID() {
+        return wordID;
+    }
+
+    public void setWordID(int wordID) {
+        this.wordID = wordID;
+    }
 
     public SightWord() {
     }
